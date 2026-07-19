@@ -5,11 +5,30 @@ import numpy as np
 from numpy.typing import ArrayLike
 import matplotlib.pyplot as plt
 
+def format_float(num: float, decimal_precision: int = 2):
+    fmt_string = f"%.{decimal_precision}f"
+    return fmt_string % num
+
+def get_model_name(model_index: int) -> str:
+    model_names = ["Model #1 (Small train dataset)", "Model #2 (Medium train dataset)", "Model #3 (Large train dataset)"]
+    return model_names[model_index]
+
+def display_model_info(model_info_path: str):
+    model_info = load(model_info_path)
+    st.markdown(f"""**Model info and evaluation:**\n
+- Train dataset size: {model_info['train_dataset_size']}\n
+- Test dataset size: {model_info['test_dataset_size']}\n
+- R-squared: {format_float(model_info['r_squared'], decimal_precision=4)}\n
+- Mean square error: {format_float(model_info['mse'])}\n
+- Root Mean Square Error: {format_float(model_info['rmse'])}\n
+- Mean Absolute Error: {format_float(model_info['mae'])}"""
+    )
+
 def load_and_predict(X: ArrayLike, filename: str) -> ArrayLike:
     # Deserialize and load the regression model and use it to predict on user provided data.
 
-    # This function takes a file name 'filename' that has a default value.
-    # It uses Joblib 'load' to load the model using the provided file name.
+    # This function takes a file name "filename" that has a default value.
+    # It uses Joblib "load" to load the model using the provided file name.
     # When the model is loaded, call its `predict` method on provied data.
 
     # Args:
@@ -39,36 +58,51 @@ def create_streamlit_app():
     #     - Calls `visualize_difference`, passing the input feature and the prediction result, 
     #       to visualize the difference between the predicted value and the actual value in the original dataset.
 
-    # Note: This function does not return any value. It directly manipulates the Streamlit app's UI by 
+    # Note: This function does not return any value. It directly manipulates the Streamlit app"s UI by 
     # writing content and rendering UI elements.
 
-    model_index = 2
+    st.header(f"Simple regression model prediction")
+
+    # Feature value slider
+    sliderConainer = st.container(border=True)
+    X = 1.27
+    with sliderConainer:
+        X = st.slider("Input feature for prediction", -3.0, 3.0, X)
+
+    # Model dropdown
+    model_indices = range(3)
+    model_index = 0
+
+    dropdownConainer = st.container(border=True)
+    with dropdownConainer:
+        model_index = st.selectbox(
+            "Select the model to make a prediction",
+            model_indices,
+            format_func=get_model_name
+        )
+
     user_readable_model_index = model_index + 1
+    model_dir_path = f"models/{user_readable_model_index}"
 
-    st.title(f"Simple regression model prediction, Model #{user_readable_model_index}")
+    # Display model info
+    with dropdownConainer:
+        model_info_path = f"{model_dir_path}/info.joblib"
+        display_model_info(model_info_path)
 
-    X = st.slider("Input feature for prediction", -3.0, 3.0, 1.27)
-    if st.button("Predict', type='primary"):
-        model_dir_path = f"models/{user_readable_model_index}"
-
-        model_eval_path = f"{model_dir_path}/eval.joblib"
-        model_eval = load(model_eval_path)
-        st.write(f"Model evaluation: {model_eval}")
-
+    if st.button("Predict", type="primary"):
         model_filename = f"{model_dir_path}/model.joblib"
         y = load_and_predict([[X]], filename=model_filename)
-        st.write(y)
 
-        X_filename = f"{model_dir_path}/X.joblib"
-        y_filename = f"{model_dir_path}/y.joblib"
+        X_filename = f"dataset/X.joblib"
+        y_filename = f"dataset/y.joblib"
         visualize_difference(X, y, X_filename, y_filename)
 
 def visualize_difference(input_feature: float, prediction: ArrayLike, X_filename: str, y_filename: str):
     # Deserialize and load the initial datasets. Calculate the difference between actual data
-    # in the 'y' dataset and the predicted value for a given 'input_feature'.
+    # in the "y" dataset and the predicted value for a given "input_feature".
 
-    # Visualize the difference by plotting the entire 'X' & 'y' as a Scatter plot. Then add
-    # a blue dot that represents the actual target value, and a red dot that represents the predicted target value for the given 'input_feature'.
+    # Visualize the difference by plotting the entire "X" & "y" as a Scatter plot. Then add
+    # a blue dot that represents the actual target value, and a red dot that represents the predicted target value for the given "input_feature".
     # Add a dashed line connects these points, highlighting the difference between them, which is annotated on the plot.
 
     # Args:
@@ -81,28 +115,35 @@ def visualize_difference(input_feature: float, prediction: ArrayLike, X_filename
     y = load(y_filename)
 
     actual_target = y[_index_of_closest(X, input_feature)]
-    difference = actual_target - prediction[0]
-
+    difference = format_float(abs(actual_target - prediction[0]))
 
     fig = plt.figure(figsize=(6,4))
-    plt.scatter(X, y, color='grey')
-    plt.scatter(input_feature, actual_target, color='blue')
-    plt.scatter(input_feature, prediction[0], color='red')
-    plt.legend(['Dataset', 'Actual target', 'Predicted target'])
-    plt.title('Prediction vs actual target')
-    plt.xlabel('Feature')
-    plt.ylabel('Target')
+    plt.scatter(X, y, color="grey")
+    plt.scatter(input_feature, actual_target, color="blue")
+    plt.scatter(input_feature, prediction[0], color="red")
+    plt.legend(["Dataset", "Actual target", "Predicted target"])
+    plt.title("Prediction vs actual target")
+    plt.xlabel("Feature")
+    plt.ylabel("Target")
     plt.grid()
-    plt.plot([input_feature, input_feature], [actual_target, prediction[0]], 'k--')
-    plt.annotate(f'Difference = {difference}', [input_feature, (actual_target + prediction[0]) / 2])
+    plt.plot([input_feature, input_feature], [actual_target, prediction[0]], "k--")
+    plt.annotate(f"  Difference ({difference})", [input_feature, (actual_target + prediction[0]) / 2])
 
+    resultsContainer = st.container(border=True)
+    with resultsContainer:
+        st.markdown(f"""**Prediction results:**\n
+- Input feature: {format_float(input_feature)}\n
+- Actual target: {format_float(actual_target)}\n
+- Predicted result: {format_float(prediction)}\n
+- Difference: {difference}"""
+        )
     st.pyplot(fig)
 
 # This is a helper function. No need to edit it
 def _index_of_closest(X: ArrayLike, k: float) -> int:
     # This function takes an array-like object `X` and a float `k`, and returns the index of the 
     # element in `X` that is closest to `k`. The function first converts `X` into a NumPy array 
-    # (if it isn't one already) to ensure compatibility with NumPy operations. It then calculates 
+    # (if it isn"t one already) to ensure compatibility with NumPy operations. It then calculates 
     # the absolute difference between each element in `X` and `k`, identifies the minimum value 
     # among these differences, and returns the index of this minimum difference.
 
@@ -122,5 +163,5 @@ def _index_of_closest(X: ArrayLike, k: float) -> int:
     return idx
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     create_streamlit_app()
