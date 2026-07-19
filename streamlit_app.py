@@ -115,26 +115,27 @@ def visualize_difference(input_feature: float, prediction: ArrayLike, X_filename
     y = load(y_filename)
 
     actual_target = y[_index_of_closest(X, input_feature)]
-    difference = format_float(abs(actual_target - prediction[0]))
+    prediction_value = prediction[0]
+    difference = format_float(abs(actual_target - prediction_value))
 
     fig = plt.figure(figsize=(6,4))
     plt.scatter(X, y, color="grey")
     plt.scatter(input_feature, actual_target, color="blue")
-    plt.scatter(input_feature, prediction[0], color="red")
+    plt.scatter(input_feature, prediction_value, color="red")
     plt.legend(["Dataset", "Actual target", "Predicted target"])
     plt.title("Prediction vs actual target")
     plt.xlabel("Feature")
     plt.ylabel("Target")
     plt.grid()
-    plt.plot([input_feature, input_feature], [actual_target, prediction[0]], "k--")
-    plt.annotate(f"  Difference ({difference})", [input_feature, (actual_target + prediction[0]) / 2])
+    plt.plot([input_feature, input_feature], [actual_target, prediction_value], "k--")
+    plt.annotate(f"  Difference ({difference})", [input_feature, (actual_target + prediction_value) / 2])
 
     resultsContainer = st.container(border=True)
     with resultsContainer:
         st.markdown(f"""**Prediction results:**\n
 - Input feature: {format_float(input_feature)}\n
 - Actual target: {format_float(actual_target)}\n
-- Predicted result: {format_float(prediction)}\n
+- Predicted result: {format_float(prediction_value)}\n
 - Difference: {difference}"""
         )
     st.pyplot(fig)
