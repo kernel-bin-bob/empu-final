@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 import matplotlib.pyplot as plt
 
-def load_and_predict(X: ArrayLike, filename: str = "linear_regression_model.joblib") -> ArrayLike:
+def load_and_predict(X: ArrayLike, filename: str) -> ArrayLike:
     # Deserialize and load the regression model and use it to predict on user provided data.
 
     # This function takes a file name 'filename' that has a default value.
@@ -42,15 +42,28 @@ def create_streamlit_app():
     # Note: This function does not return any value. It directly manipulates the Streamlit app's UI by 
     # writing content and rendering UI elements.
 
-    st.title('Simple regression model prediction')
+    model_index = 2
+    user_readable_model_index = model_index + 1
 
-    X = st.slider('Input feature for prediction', -3.0, 3.0, 1.27)
-    if st.button('Predict', type='primary'):
-        y = load_and_predict([[X]])
+    st.title(f"Simple regression model prediction, Model #{user_readable_model_index}")
+
+    X = st.slider("Input feature for prediction", -3.0, 3.0, 1.27)
+    if st.button("Predict', type='primary"):
+        model_dir_path = f"models/{user_readable_model_index}"
+
+        model_eval_path = f"{model_dir_path}/eval.joblib"
+        model_eval = load(model_eval_path)
+        st.write(f"Model evaluation: {model_eval}")
+
+        model_filename = f"{model_dir_path}/model.joblib"
+        y = load_and_predict([[X]], filename=model_filename)
         st.write(y)
-        visualize_difference(X, y)
 
-def visualize_difference(input_feature: float, prediction: ArrayLike):
+        X_filename = f"{model_dir_path}/X.joblib"
+        y_filename = f"{model_dir_path}/y.joblib"
+        visualize_difference(X, y, X_filename, y_filename)
+
+def visualize_difference(input_feature: float, prediction: ArrayLike, X_filename: str, y_filename: str):
     # Deserialize and load the initial datasets. Calculate the difference between actual data
     # in the 'y' dataset and the predicted value for a given 'input_feature'.
 
@@ -61,9 +74,8 @@ def visualize_difference(input_feature: float, prediction: ArrayLike):
     # Args:
     #     input_feature (float): User provided data used for prediction.
     #     prediction (array-like): Predicted value.
-
-    X_filename = "X.joblib"
-    y_filename = "y.joblib"
+    #     X_filename (array-like): Test feature matrix filename.
+    #     y_filename (array-like): Validation target values filename.
 
     X = load(X_filename)
     y = load(y_filename)
